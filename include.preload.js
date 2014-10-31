@@ -16,6 +16,7 @@
  */
 
 var SELECTOR_GROUP_SIZE = 20;
+var TUMBLR_FEED = "http://rhizomedotorg.tumblr.com/api/read/json"
 
 var typeMap = {
   "img": "IMAGE",
@@ -147,6 +148,21 @@ function init(document)
       (document.head || document.documentElement).appendChild(style);
     }
 
+    var loadImages = function(callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", TUMBLR_FEED, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+          var resp = xhr.responseText.replace("var tumblr_api_read = ", "");
+          resp = resp.substring(0, resp.length - 2);
+          var result = JSON.parse(resp);
+
+          callback(result.posts);
+        }
+      }
+      xhr.send();
+    }
+
     var setRules = function()
     {
       // The sheet property might not exist yet if the
@@ -157,13 +173,19 @@ function init(document)
         return;
       }
 
+
       // WebKit apparently chokes when the selector list in a CSS rule is huge.
       // So we split the elemhide selectors into groups.
-      for (var i = 0; selectors.length > 0; i++)
-      {
-        var selector = selectors.splice(0, SELECTOR_GROUP_SIZE).join(", ");
-        style.sheet.insertRule(selector + " { display: none !important; }", i);
-      }
+      loadImages(function(posts) {
+        var image = posts[(Math.floor(Math.random() * 20))]["photo-url-500"];
+        var rule = "{ background: url('" + image + "') !important;" +
+          "background-size: 100% !important;}";
+
+        for (var i = 0; selectors.length > 0; i++) {
+          var selector = selectors.splice(0, SELECTOR_GROUP_SIZE).join(", ");
+          style.sheet.insertRule(selector + rule, i);
+        }
+      });
     };
 
     setRules();
